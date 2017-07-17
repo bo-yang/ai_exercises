@@ -124,10 +124,10 @@ def breadthFirstSearch(problem):
     front.push(problem.getStartState())
     while not front.isEmpty():
         node = front.pop()
+        visited.append(node)
         if problem.isGoalState(node):
             goal = node
             break
-        visited.append(node)
         for succ in problem.getSuccessors(node):
             # successor is a tuple (nextState, action, cost)
             if succ[0] not in visited:
@@ -155,10 +155,10 @@ def uniformCostSearch(problem):
     front.push((problem.getStartState(), cost), cost) # use cost as priority
     while not front.isEmpty():
         (node, cost) = front.pop() # smallest
+        visited.append(node)
         if problem.isGoalState(node):
             goal = node
             break
-        visited.append(node)
         for succ in problem.getSuccessors(node):
             # successor is a tuple (nextState, action, cost)
             if succ[0] not in visited:
@@ -190,7 +190,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     visited = list()
     pred = dict() # {successor: (predecessor, action, cost)}
     goal = None
-    cost = 0 # cost from Start to current node
+    cost = heuristic(problem.getStartState(), problem) # cost from Start to current node
     front.push((problem.getStartState(), cost), cost) # use cost as priority
     while not front.isEmpty():
         (node, cost) = front.pop() # smallest
