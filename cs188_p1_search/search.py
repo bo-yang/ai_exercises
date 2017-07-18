@@ -72,6 +72,27 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
+def generic_search(problem, fringe, add_to_fringe_fn):
+    closed = set()
+    start = (problem.getStartState(), 0, [])  # (node, cost, path)
+    add_to_fringe_fn(fringe, start, 0)
+
+    while not fringe.isEmpty():
+        (node, cost, path) = fringe.pop()
+
+        if problem.isGoalState(node):
+            return path
+
+        # only expand nodes that are never visited before
+        if not node in closed:
+            closed.add(node)
+            for child_node, child_action, child_cost in problem.getSuccessors(node):
+                new_cost = cost + child_cost
+                new_path = path + [child_action]
+                new_state = (child_node, new_cost, new_path)
+                add_to_fringe_fn(fringe, new_state, new_cost)
+
+
 def depthFirstSearch(problem):
     """
     Search the deepest nodes in the search tree first.
@@ -86,95 +107,32 @@ def depthFirstSearch(problem):
     print "Is the start a goal?", problem.isGoalState(problem.getStartState())
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
-    "*** YOUR CODE HERE ***"
-    front = util.Stack()
-    visited = list()
-    pred = dict() # {successor: (predecessor, action)}
-    goal = None
-    front.push(problem.getStartState())
-    while not front.isEmpty():
-        node = front.pop()
-        if problem.isGoalState(node):
-            goal = node
-            break
-        visited.append(node)
-        for succ in problem.getSuccessors(node):
-            # successor is a tuple (nextState, action, cost)
-            if succ[0] not in visited:
-                front.push(succ[0])
-                pred[succ[0]] = (node, succ[1])
+    fringe = util.Stack()
+    def add_to_fringe_fn(fringe, state, cost):
+        fringe.push(state)
 
-    # backtrack to get the actions
-    actions = []
-    if goal != None:
-        node = goal
-        while node != problem.getStartState():
-            actions.insert(0, pred[node][1])
-            node = pred[node][0]
+    return generic_search(problem, fringe, add_to_fringe_fn)
 
-    return actions
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    front = util.Queue()
-    visited = list()
-    pred = dict() # {successor: (predecessor, action)}
-    goal = None
-    front.push(problem.getStartState())
-    while not front.isEmpty():
-        node = front.pop()
-        visited.append(node)
-        if problem.isGoalState(node):
-            goal = node
-            break
-        for succ in problem.getSuccessors(node):
-            # successor is a tuple (nextState, action, cost)
-            if succ[0] not in visited:
-                front.push(succ[0])
-                pred[succ[0]] = (node, succ[1])
+    fringe = util.Queue()
+    def add_to_fringe_fn(fringe, state, cost):
+        fringe.push(state)
 
-    # backtrack to get the actions
-    actions = []
-    if goal != None:
-        node = goal
-        while node != problem.getStartState():
-            actions.insert(0, pred[node][1])
-            node = pred[node][0]
+    return generic_search(problem, fringe, add_to_fringe_fn)
 
-    return actions
+
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    front = util.PriorityQueue()
-    visited = list()
-    pred = dict() # {successor: (predecessor, action, cost)}
-    goal = None
-    cost = 0 # cost from Start to current node
-    front.push((problem.getStartState(), cost), cost) # use cost as priority
-    while not front.isEmpty():
-        (node, cost) = front.pop() # smallest
-        visited.append(node)
-        if problem.isGoalState(node):
-            goal = node
-            break
-        for succ in problem.getSuccessors(node):
-            # successor is a tuple (nextState, action, cost)
-            if succ[0] not in visited:
-                cost += succ[2] # update cost
-                front.push((succ[0],cost), cost)
-                pred[succ[0]] = (node, succ[1])
+    fringe = util.PriorityQueue()
+    def add_to_fringe_fn(fringe, state, cost):
+        fringe.push(state, cost)
 
-    # backtrack to get the actions
-    actions = []
-    if goal != None:
-        node = goal
-        while node != problem.getStartState():
-            actions.insert(0, pred[node][1])
-            node = pred[node][0]
+    return generic_search(problem, fringe, add_to_fringe_fn)
 
-    return actions
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -185,35 +143,13 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    front = util.PriorityQueue()
-    visited = list()
-    pred = dict() # {successor: (predecessor, action, cost)}
-    goal = None
-    cost = heuristic(problem.getStartState(), problem) # cost from Start to current node
-    front.push((problem.getStartState(), cost), cost) # use cost as priority
-    while not front.isEmpty():
-        (node, cost) = front.pop() # smallest
-        if problem.isGoalState(node):
-            goal = node
-            break
-        visited.append(node)
-        for succ in problem.getSuccessors(node):
-            # successor is a tuple (nextState, action, cost)
-            if succ[0] not in visited:
-                cost += (succ[2] + heuristic(succ[0], problem)) # update cost
-                front.push((succ[0],cost), cost)
-                pred[succ[0]] = (node, succ[1])
+    fringe = util.PriorityQueue()
+    def add_to_fringe_fn(fringe, state, cost):
+        new_cost = cost + heuristic(state[0], problem)
+        fringe.push(state, new_cost)
 
-    # backtrack to get the actions
-    actions = []
-    if goal != None:
-        node = goal
-        while node != problem.getStartState():
-            actions.insert(0, pred[node][1])
-            node = pred[node][0]
+    return generic_search(problem, fringe, add_to_fringe_fn)
 
-    return actions
 
 # Abbreviations
 bfs = breadthFirstSearch
