@@ -175,6 +175,41 @@ class MultiAgentSearchAgent(Agent):
                     beta = func(beta, bestScore)
         return (bestScore, bestAction)
 
+    def _expectimax(self, state, depth, agent):
+        """
+        state - game state
+        depth - search depth
+        ismax - max player(true) or min player(false)
+        """
+        if agent == state.getNumAgents():  # is pacman
+            return self._expectimax(state, depth + 1, 0)  # start next depth
+
+        if self.isTerminal(state, depth, agent):
+            return (self.evaluationFunction(state), None)
+
+        bestScore = None
+        bestAction = None
+        if self.isPacman(state, agent):
+            # max player
+            bestScore = self.INF_NEG
+            for action in state.getLegalActions(agent):
+                successor = state.generateSuccessor(agent, action)
+                (score,_) = self._expectimax(successor, depth, agent + 1)
+                (bestScore, bestAction) = max((bestScore, bestAction), (score, action))
+        else:
+            # min player
+            bestScore = self.INF_POS
+            totalScore = 0.0
+            allActions = state.getLegalActions(agent)
+            for action in allActions:
+                successor = state.generateSuccessor(agent, action)
+                (score,_) = self._expectimax(successor, depth, agent + 1)
+                (bestScore, bestAction) = min((bestScore, bestAction), (score, action))
+                totalScore += score
+            bestScore = (totalScore / len(allActions))
+
+        return (bestScore, bestAction)
+
 class MinimaxAgent(MultiAgentSearchAgent):
     """
       Your minimax agent (question 2)
@@ -299,7 +334,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           legal moves.
         """
         "*** YOUR CODE HERE ***"
-        _, action = self._minimax(gameState, 0, 0, alpha=self.INF_NEG, beta=self.INF_POS)
+        _, action = self._expectimax(gameState, 0, 0)
         return action
 
 def betterEvaluationFunction(currentGameState):
@@ -310,7 +345,25 @@ def betterEvaluationFunction(currentGameState):
       DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    WEIGHT_FOOD = 10.0
+    WEIGHT_GHOST = 10.0
+
+    score = currentGameState.getScore()
+    newPos = currentGameState.getPacmanPosition()
+    newFood = currentGameState.getFood()
+    ghostPos = currentGameState.getGhostPositions()
+
+    distance = lambda x, y: ((x[0] - y[0])**2 + (x[1] - y[1])**2) ** 0.5
+    dist_to_food = [distance(newPos, pos) for pos in newFood.asList()]
+    if len(dist_to_food) > 0:
+        score += WEIGHT_FOOD/min(dist_to_food)
+
+    #dist_to_ghost = [distance(newPos, pos) for pos in successorGameState.getGhostPositions()]
+    dist_to_ghost = distance(newPos, ghostPos[0])
+    if dist_to_ghost != 0:
+        score -= WEIGHT_GHOST/dist_to_ghost
+
+    return score
 
 # Abbreviation
 better = betterEvaluationFunction
