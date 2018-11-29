@@ -66,6 +66,35 @@ def test_model(mu, sigma, pi, features, tx, ty):
     errors=(ty.astype(int) != predicts)
     return sum(errors)
 
+def test_model2(mu, sigma, pi, features, tx, ty):
+    ''' Define a general purpose testing routine that takes as input:
+        - the arrays pi, mu, sigma defining the generative model, as above
+        - the test set (points tx and labels ty)
+        - a list of features features (chosen from 0-12)
+    It should return the number of mistakes made by the generative model
+    on the test data, when restricted to the specified features.
+    '''
+    ###
+    ### Your code goes here
+    ###
+    k = len(np.unique(ty))
+    p_xy = np.zeros([k+1, len(ty)]) # p(x|y)
+    for lable in range(1,k+1):
+        rv = multivariate_normal(mu[lable][features], sigma[lable][features,features])
+        p_xy[lable,:] = rv.pdf(tx[:,features])
+    p_x = p_xy
+    for lable in range(1,k+1):
+        p_x[lable,:] = np.multiply(pi[lable], p_x[lable,:])
+    px = np.sum(p_x, axis=0) #p(x)
+
+    p_yx = np.zeros([k+1, len(ty)]) # p(y|x)
+    for lable in range(1,k+1):
+        p_yx[lable,:] = np.divide(np.multiply(p_xy[lable], pi[lable]), px)
+
+    predicts = np.argmax(p_yx, axis=0)
+    errors = (ty.astype(int) != predicts)
+    return sum(errors)
+  
 for feat in [[2], [0,2], [0,2,6]]:
     errors = test_model(mu, sigma, pi, feat, testx, testy)
     fstr = ','.join([str(elem) for elem in feat])
