@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt 
-import gzip, os
+import gzip, os, sys
 import numpy as np
 from scipy.stats import multivariate_normal
 
@@ -54,7 +54,7 @@ def fit_generative_model(x,y):
         - sigma[j]: the 784x784 covariance matrix
     This means that pi is 10x1, mu is 10x784, and sigma is 10x784x784.
     """
-    k = 10  # labels 0,1,...,k-1
+    k = len(np.unique(y)) # labels 0,1,...,k-1
     d = (x.shape)[1]  # number of features
     mu = np.zeros((k,d))
     sigma = np.zeros((k,d,d))
@@ -62,22 +62,28 @@ def fit_generative_model(x,y):
     ###
     ### Your code goes here
     ###
+    for label in range(0,k):
+        indices = (y == label)
+        mu[label] = np.mean(x[indices,:], axis=0)
+        sigma[label] = np.cov(x[indices,:], rowvar=0, bias=1)
+        pi[label] = float(sum(indices))/float(len(y))
     # Halt and return parameters
     return mu, sigma, pi
 
 mu, sigma, pi = fit_generative_model(train_data, train_labels)
-displaychar(mu[0])
-displaychar(mu[1])
-displaychar(mu[2])
+#displaychar(mu[0])
+#displaychar(mu[1])
+#displaychar(mu[2])
 
 # Make predictions on test data
 # Compute log Pr(label|image) for each [test image,label] pair.
+k = len(np.unique(test_labels)) # labels 0,1,...,k-1
 score = np.zeros((len(test_labels),k))
 for label in range(0,k):
-    rv = multivariate_normal(mean=mu[label], cov=sigma[label])
+    rv = multivariate_normal(mean=mu[label], cov=sigma[label], allow_singular=True)
     for i in range(0,len(test_labels)):
        score[i,label] = np.log(pi[label]) + rv.logpdf(test_data[i,:])
 predictions = np.argmax(score, axis=1)
 # Finally, tally up score
 errors = np.sum(predictions != test_labels)
-print "Your model makes " + str(errors) + " errors out of 10000"
+print("Your model makes " + str(errors) + " errors out of 10000")

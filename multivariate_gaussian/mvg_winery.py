@@ -60,20 +60,20 @@ def test_model(mu, sigma, pi, features, tx, ty):
     # compute p(x|y) for all possible y
     k = len(np.unique(ty))
     p_xy = np.zeros([k+1, len(ty)]) # p(x|y)
-    for lable in range(1,k+1):
-        rv = multivariate_normal(mu[lable][features], sigma[lable][features,features])
-        p_xy[lable,:] = rv.pdf(tx[:,features])
+    for label in range(1,k+1):
+        rv = multivariate_normal(mu[label][features], sigma[label][features,features])
+        p_xy[label,:] = rv.pdf(tx[:,features])
 
     # compute p(y|x), since p(x) is fixed to all y, then
     #   argmax p(y|x) = argmax p(x|y)p(y)
     p_yx = np.zeros([k+1, len(ty)]) # p(y|x)
-    for lable in range(1,k+1):
-        p_yx[lable,:] = np.multiply(p_xy[lable], pi[lable])
+    for label in range(1,k+1):
+        p_yx[label,:] = np.multiply(p_xy[label], pi[label])
 
     predicts = np.argmax(p_yx, axis=0)
     errors = (ty.astype(int) != predicts)
     return sum(errors)
-  
+
 for feat in [[2], [0,2], [0,2,6]]:
     errors = test_model(mu, sigma, pi, feat, testx, testy)
     fstr = ','.join([str(elem) for elem in feat])
